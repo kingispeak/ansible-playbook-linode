@@ -1,0 +1,5 @@
+ssh_keys: >
+        ['your ssh public key content', '~/.ssh/id_rsa.pub']
+password: 
+token:
+server_domain:

@@ -1,0 +1,72 @@
+---
+- name: Provision new linode
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars
+
+  tasks:
+  - name: Fail if hostname is not defined
+    fail: msg="hostname needs to be defined via command line, e.g. --extra-vars hostname=<your_hostname>"
+    when: hostname is not defined
+
+  - name: Create linode server via Linode API
+    linode_v4:
+      label: '{{ hostname }}'
+      access_token: '{{ token }}'
+      type: g6-nanode-1
+      region: ap-northeast
+      image: linode/ubuntu20.04
+      root_pass: '{{ password }}'
+      authorized_keys: '{{ ssh_keys }}'
+      group: example_group
+      tags: example_group
+      state: present
+    register: linode
+
+  - name: Show me the registered linode
+    debug: var=linode
+
+  - name: Add new host to in-memory inventory
+    add_host:
+      hostname: "{{ linode.instance.ipv4[0] }}"
+      groups:
+        - linode
+
+  - name: Wait for Linode to listen on port 22
+    wait_for:
+      state: started
+      host: "{{ linode.instance.ipv4[0] }}"
+      port: 22
+
+- name: Common configuration on the new server
+  hosts: linode
+  user: root
+
+  vars_files:
+    - vars
+
+  vars:
+    server_fqdn: "{{ hostname }}.{{ server_domain }}"
+
+  tasks:
+    - name: set hostname
+      hostname: name="{{ hostname }}"
+  
+    - name: set FQDN
+      lineinfile:
+        dest: /etc/hosts
+        regexp: "^{{ ansible_default_ipv4.address }}"
+        line: "{{ ansible_default_ipv4.address }} {{ server_fqdn }} {{ hostname }}"
+        state: present
+        backup: yes
+
+    - name: ssh key only
+      copy: src=sshd_config dest=/etc/ssh/sshd_config
+      notify: restart ssh
+
+  handlers:
+    - name: restart ssh
+      service: name=ssh state=restarted
