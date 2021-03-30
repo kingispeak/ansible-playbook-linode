@@ -1,5 +1,7 @@
 # ansible-playbook-linode
 
+![ansible-lint workflow](https://github.com/kingispeak/ansible-playbook-linode/actions/workflows/ansible-lint.yml/badge.svg)
+
 An ansible playbook to provision a new linode and give it a hostname and a FQDN, deploys a public ssh key under its root account and disable password based ssh login.
 
 # Getting started
@@ -21,4 +23,4 @@ Create a `.vault_pass` file containing a strong password in the project root
 
 Update vars file and run playbook
 
-      ansible-playbook --extra-vars server_hostname=<your_hostname> provision.yml
+      ansible-playbook --extra-vars hostname=<your_hostname> provision.yml
